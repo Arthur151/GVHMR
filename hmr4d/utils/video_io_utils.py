@@ -1,4 +1,5 @@
 import imageio.v3 as iio
+import imageio
 import numpy as np
 import torch
 from pathlib import Path
@@ -82,11 +83,16 @@ def save_video(images, video_path, fps=30, crf=17):
 
 
 def get_writer(video_path, fps=30, crf=17):
-    """remember to .close()"""
-    writer = iio.imopen(video_path, "w", plugin="pyav")
-    writer.init_video_stream("libx264", fps=fps)
-    writer._video_stream.options = {"crf": str(crf)}
-    return writer
+    """
+    使用 imageio 的稳定接口创建视频写入器，适配 ffmpeg + H264。
+    """
+    return imageio.get_writer(
+        video_path,
+        fps=fps,
+        codec="libx264",
+        quality=None,  # 默认启用 CRF 模式
+        ffmpeg_params=["-crf", str(crf), "-preset", "slow"]
+    )
 
 
 def copy_file(video_path, out_video_path, overwrite=True):

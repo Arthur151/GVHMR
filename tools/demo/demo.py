@@ -39,7 +39,7 @@ CRF = 23  # 17 is lossless, every +6 halves the mp4 size
 def parse_args_to_cfg():
     # Put all args to cfg
     parser = argparse.ArgumentParser()
-    parser.add_argument("--video", type=str, default="inputs/demo/dance_3.mp4")
+    parser.add_argument("--video", type=str, default="docs/example_video/tennis.mp4")
     parser.add_argument("--output_root", type=str, default=None, help="by default to outputs/demo")
     parser.add_argument("-s", "--static_cam", action="store_true", help="If true, skip DPVO")
     parser.add_argument("--use_dpvo", action="store_true", help="If true, use DPVO. By default not using DPVO.")
@@ -88,7 +88,11 @@ def parse_args_to_cfg():
         reader = get_video_reader(video_path)
         writer = get_writer(cfg.video_path, fps=30, crf=CRF)
         for img in tqdm(reader, total=get_video_lwh(video_path)[0], desc=f"Copy"):
-            writer.write_frame(img)
+            if not isinstance(img, np.ndarray):
+                img = np.array(img)
+            if img.dtype != np.uint8:
+                img = img.astype(np.uint8)
+            writer.append_data(img)
         writer.close()
         reader.close()
 
@@ -237,7 +241,7 @@ def render_incam(cfg):
         # rd_point = (bbx_xys_[:2] + bbx_xys_[2:] / 2).astype(int)
         # img = cv2.rectangle(img, lu_point, rd_point, (255, 178, 102), 2)
 
-        writer.write_frame(img)
+        writer.append_data(img)
     writer.close()
     reader.close()
 
@@ -299,7 +303,7 @@ def render_global(cfg):
     for i in tqdm(range(render_length), desc=f"Rendering Global"):
         cameras = renderer.create_camera(global_R[i], global_T[i])
         img = renderer.render_with_ground(verts_glob[[i]], color[None], cameras, global_lights)
-        writer.write_frame(img)
+        writer.append_data(img)
     writer.close()
 
 
